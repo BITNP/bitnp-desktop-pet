@@ -1,1 +1,1 @@
-test
+This repository is for the BitNP Desktop Pet project.
