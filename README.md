@@ -1,4 +1,4 @@
-# BitNP Desktop Pet (位元北工桌宠)
+# BitNP Desktop Pet (树莓娘桌宠)
 
 基于 Electron + React + TypeScript + Vite 构建的 Windows 桌面宠物基础框架。
 
