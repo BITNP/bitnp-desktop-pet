@@ -1,0 +1,4 @@
+.pet-container {
+  /* Use custom IPC drag, not Chromium drag region */
+  -webkit-app-region: no-drag;
+}
