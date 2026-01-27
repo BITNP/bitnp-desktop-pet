@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && electron-builder",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "cd node_modules/.pnpm/electron@* && cd node_modules/electron && node install.js"
   },
   "dependencies": {
     "vue": "^3.4.0"
@@ -21,7 +22,7 @@
   },
   "build": {
     "appId": "com.bitnp.desktoppet",
-    "productName": "BitNP Desktop Pet",
+    "productName": "BITNP Desktop Pet",
     "directories": {
       "output": "release/${version}"
     },
