@@ -12,8 +12,8 @@ import path from 'path'
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(__dirname, '../public')
 
-let win: BrowserWindow | null
-let tray: Tray | null = null
+let win
+let tray = null
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
@@ -55,14 +55,14 @@ function createWindow() {
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.setIgnoreMouseEvents(ignore, options)
   })
-  let dragOffset: { x: number; y: number } | null = null
-  ipcMain.on('drag-start', (event, screenX: number, screenY: number) => {
+  let dragOffset = null
+  ipcMain.on('drag-start', (event, screenX, screenY) => {
     const w = BrowserWindow.fromWebContents(event.sender)
     if (!w) return
     const b = w.getBounds()
     dragOffset = { x: screenX - b.x, y: screenY - b.y }
   })
-  ipcMain.on('drag-move', (event, screenX: number, screenY: number) => {
+  ipcMain.on('drag-move', (event, screenX, screenY) => {
     const w = BrowserWindow.fromWebContents(event.sender)
     if (!w || !dragOffset) return
     w.setPosition(Math.round(screenX - dragOffset.x), Math.round(screenY - dragOffset.y))

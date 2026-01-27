@@ -1,15 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('ipcRenderer', {
-  send: (channel: string, ...args: any[]) => {
+  send: (channel, ...args) => {
     ipcRenderer.send(channel, ...args)
   },
-  on: (channel: string, func: (...args: any[]) => void) => {
-    const subscription = (_event: any, ...args: any[]) => func(...args)
+  on: (channel, func) => {
+    const subscription = (_event, ...args) => func(...args)
     ipcRenderer.on(channel, subscription)
     return () => ipcRenderer.removeListener(channel, subscription)
   },
-  off: (channel: string, func: (...args: any[]) => void) => {
+  off: (channel, func) => {
     ipcRenderer.removeListener(channel, func) // Note: this simple implementation might not work perfectly with the wrapper above
   },
 })

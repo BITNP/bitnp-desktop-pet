@@ -1,6 +1,6 @@
 # BitNP Desktop Pet (树莓娘桌宠)
 
-基于 Electron + React + TypeScript + Vite 构建的 Windows 桌面宠物基础框架。
+基于 Electron + Vue 3 + TypeScript + Vite 构建的 Windows 桌面宠物基础框架。
 
 ## 核心特性
 
@@ -15,7 +15,7 @@
 
 ## 技术栈
 
-- **前端**: React 18, TypeScript, Vite
+- **前端**: Vue 3, TypeScript, Vite
 - **主进程**: Electron 28
 - **构建工具**: `vite-plugin-electron` (集成 Vite 与 Electron)
 - **打包工具**: `electron-builder`
@@ -43,7 +43,7 @@ npm run build
 ## 项目结构
 
 - `electron/`: Electron 主进程及预加载脚本代码。
-- `src/`: React 渲染进程代码。
+- `src/`: Vue 3 渲染进程代码。
 - `dist/`: 前端静态资源构建输出（Vite）。
 - `dist-electron/`: Electron 脚本构建输出。
 
