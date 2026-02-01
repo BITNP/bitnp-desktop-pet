@@ -169,6 +169,21 @@ export default {
             }
         },
 
+        updateFocus(data) {
+            const {windowX, windowY, cursorX, cursorY} = data;
+            const relX = cursorX - (windowX + (window.innerWidth * 0.5));
+            const relY = -(cursorY - (windowY + (window.innerHeight * 0.4)));
+
+            const clip = (val, min, max) => (val < min) ? min : (val > max) ? max : val
+
+            const x = clip(relX / 200, -1, 1);
+            const y = clip(relY / 200, -1, 1);
+
+
+            this.live2dController.focus(x, y);
+            console.log("updataFocus", x, y);
+        }
+
     },
 
     mounted() {
@@ -176,10 +191,12 @@ export default {
 
         // for ipc
         window.ipcRenderer?.on('check-mouse-position', checkMousePosition)
+        window.ipcRenderer?.on('update-focus', (data) => self.updateFocus(data))
 
         // shumeiniang Live2d controller
         const config = LIVE2D_CONFIG;
         config.canvas = this.$refs.mainCanvas;
+        config.enableFocus = true;
         console.log(config)
         const live2dController = new Live2dController(config);
         live2dController.setup();

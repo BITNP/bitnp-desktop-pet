@@ -58,11 +58,15 @@ export default class Live2dController {
      * 
      * @param {FaceParamExpressionDictionary} faceParamExpressionDict 描述所有支持的表情名称，及其在 Live2D 所有表情中的顺序
      */
-    constructor({modelURL, canvas, motionDict, expressionDict, faceParamExpressionDict}) {
+    constructor({modelURL, canvas, motionDict, expressionDict, faceParamExpressionDict, enableFocus}) {
         const self = this;
         this.firstUpdate = true;
         this.dictParams = {};
         this.initParamDict = {};
+
+        this.enableFocus = enableFocus;
+        this.focusX = 0.0;
+        this.focusY = 0.0;
 
         this.modelURL = modelURL;
         this.canvas = canvas;
@@ -111,6 +115,12 @@ export default class Live2dController {
             let canStop = true;
             for (let paramName in self.initParamDict) {
                 if (shouldSkip(paramName)) continue;
+                
+                const FOCUS_PARAMS = ["ParamAngleX", "ParamAngleY"];
+                if (FOCUS_PARAMS.includes(paramName) && !self.faceParamExpressionName && self.enableFocus) {
+                    continue;
+                }
+
                 const initVal = self.initParamDict[paramName];
                 const curVal = self.dictParams[paramName];
                 if (isNaN(curVal)) continue;
@@ -129,8 +139,8 @@ export default class Live2dController {
             }
         };
 
-        // 初始化状态
-        this.startNewState();
+        // // 初始化状态
+        // this.startNewState(); // 禁用马尔可夫链
 
         this.faceParamExpressionLoopId = setInterval(() => {
             const time = Date.now();
@@ -167,6 +177,20 @@ export default class Live2dController {
             self.dictParams["ParamBreath"] = breath;
             self.faceParamExpressionFrame += 1;
         }, 1000 / fps);
+    }
+
+    /**
+     * 粗略设置人物视线焦点
+     * @param {number} x 取值-1 ~ 1
+     * @param {number} y 取值-1 ~ 1
+     */
+    focus(x, y) {
+        const clip = (val, min, max) => (val < min) ? min : (val > max) ? max : val
+
+        const clipNorm = 0.8;
+
+        this.focusX = clip(x, -clipNorm, clipNorm);
+        this.focusY = clip(y, -clipNorm, clipNorm);
     }
 
     /**
@@ -222,17 +246,17 @@ export default class Live2dController {
 
     // 执行摇头动作
     executeHeadShake(time, k) {
-        const idleCycle = 3000;
-        const angleX = Math.sin(time / idleCycle * (2 * Math.PI)) * 5;
-        const angleZ = Math.cos(time / idleCycle * (2 * Math.PI)) * 3;
-        const threshold = 0.1;
+        // const idleCycle = 3000;
+        // const angleX = Math.sin(time / idleCycle * (2 * Math.PI)) * 5;
+        // const angleZ = Math.cos(time / idleCycle * (2 * Math.PI)) * 3;
+        // const threshold = 0.1;
         
-        if (Math.abs(this.dictParams["ParamAngleX"] - angleX) > threshold) {
-            this.dictParams["ParamAngleX"] = this.dictParams["ParamAngleX"] * (1 - k) + angleX * k;
-        }
-        if (Math.abs(this.dictParams["ParamAngleZ"] - angleZ) > threshold) {
-            this.dictParams["ParamAngleZ"] = this.dictParams["ParamAngleZ"] * (1 - k) + angleZ * k;
-        }
+        // if (Math.abs(this.dictParams["ParamAngleX"] - angleX) > threshold) {
+        //     this.dictParams["ParamAngleX"] = this.dictParams["ParamAngleX"] * (1 - k) + angleX * k;
+        // }
+        // if (Math.abs(this.dictParams["ParamAngleZ"] - angleZ) > threshold) {
+        //     this.dictParams["ParamAngleZ"] = this.dictParams["ParamAngleZ"] * (1 - k) + angleZ * k;
+        // }
     }
 
     // 执行眨眼动作
@@ -369,6 +393,29 @@ export default class Live2dController {
         // 覆盖focus函数
         model.internalModel.focusController.old_update = model.internalModel.focusController.update;
         model.internalModel.focusController.update = function (...args) {
+
+            // console.log("focus func", self.faceParamExpressionName, self.enableFocus)
+            if (!self.faceParamExpressionName && self.enableFocus) {
+                // 应用 focus 位置设置
+                const K = 0.1;
+                const threshold = 0.01;
+
+                const newAngleX = self.focusX * 30;
+                const newAngleY = self.focusY * 30;
+
+                // if (Math.abs(self.dictParams["ParamAngleX"] - newAngleX) < threshold) {
+                //     self.dictParams["ParamAngleX"] = newAngleX;
+                // } else {
+                // }
+                self.dictParams["ParamAngleX"] = newAngleX * K + self.dictParams["ParamAngleX"] * (1 - K);
+
+                // if (Math.abs(self.dictParams["ParamAngleX"] - newAngleX) < threshold) {
+                //     self.dictParams["ParamAngleY"] = newAngleY;
+                // } else {
+                // }
+                self.dictParams["ParamAngleY"] = newAngleY * K + self.dictParams["ParamAngleY"] * (1 - K);
+            }
+
             let angleX = self.dictParams["ParamAngleX"];
             if (isNaN(angleX)) {
                 angleX = 0;

@@ -95,6 +95,13 @@ function createWindow() {
     const relX = cursor.x - winBounds.x
     const relY = cursor.y - winBounds.y
     
+    win.webContents.send('update-focus', {
+      windowX: winBounds.x,
+      windowY: winBounds.y,
+      cursorX: cursor.x,
+      cursorY: cursor.y
+    })
+
     if (relX >= 0 && relX <= winBounds.width && 
         relY >= 0 && relY <= winBounds.height) {
       // const requestId = ++lastRequestId
