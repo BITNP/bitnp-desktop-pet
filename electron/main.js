@@ -61,9 +61,16 @@ function createTray() {
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
 
+  const windowWidth = 600;
+  const windowHeight = 800;
+
   win = new BrowserWindow({
-    width: 600, // Initial size
-    height: 800,
+    width: windowWidth, // Initial size
+    height: windowHeight,
+
+    x: width - windowWidth,
+    y: height - windowHeight,
+
     type: 'toolbar', // Helps with always on top behavior on some OS
     frame: false, // Frameless
     // frame: true, // DEBUG
