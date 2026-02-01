@@ -10,6 +10,7 @@
     "postinstall": "cd node_modules/.pnpm/electron@* && cd node_modules/electron && node install.js"
   },
   "dependencies": {
+    "electron-serve": "^3.0.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "6.5.10",
     "vue": "^3.4.0"
@@ -29,8 +30,16 @@
       "output": "release/${version}"
     },
     "files": [
-      "dist-electron/**/*",
-      "dist/**/*"
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "dist",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "target": [
@@ -48,6 +57,10 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null
     }
   }
 }
