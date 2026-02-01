@@ -10,6 +10,8 @@
     "postinstall": "cd node_modules/.pnpm/electron@* && cd node_modules/electron && node install.js"
   },
   "dependencies": {
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "6.5.10",
     "vue": "^3.4.0"
   },
   "devDependencies": {

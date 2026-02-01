@@ -34,19 +34,58 @@ function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
 
   win = new BrowserWindow({
-    width: 200, // Initial size
-    height: 200,
+    width: 600, // Initial size
+    height: 800,
     type: 'toolbar', // Helps with always on top behavior on some OS
     frame: false, // Frameless
+    // frame: true, // DEBUG
     transparent: true, // Transparent
+    // transparent: false, // DEBUG
     alwaysOnTop: true, // Always on top
     hasShadow: false, // Remove shadow
     resizable: false, // Prevent resizing by user (optional)
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: false, // Prevent throttling when hidden
+      nodeIntegration: true,      // 允许在渲染进程中使用 Node.js API
+      contextIsolation: false,   // 禁用上下文隔离
+      webSecurity: false,        // 禁用 web 安全策略（开发时）
+      enableRemoteModule: true,  // 启用 remote 模块
+      sandbox: false,            // 禁用沙箱
     },
   })
+
+
+  // 2. 设置拖拽区域（桌宠身体部分）
+  let dragRect = { x: 100, y: 100, width: 200, height: 300 }
+  let isInDragArea = false
+  
+  // 3. 持续监听鼠标位置
+  const mouseCheckInterval = setInterval(() => {
+    const cursor = screen.getCursorScreenPoint()
+    const winBounds = win.getBounds()
+    
+    // 计算鼠标相对于窗口的位置
+    const relX = cursor.x - winBounds.x
+    const relY = cursor.y - winBounds.y
+    
+    // 判断鼠标是否在拖拽区域内
+    const newIsInDragArea = (
+      relX >= dragRect.x &&
+      relX <= dragRect.x + dragRect.width &&
+      relY >= dragRect.y &&
+      relY <= dragRect.y + dragRect.height
+    )
+    
+    // 状态变化时才切换
+    if (newIsInDragArea !== isInDragArea) {
+      isInDragArea = newIsInDragArea
+      // 关键：在拖拽区域内正常，在区域外穿透
+      win.setIgnoreMouseEvents(!isInDragArea, { forward: true })
+    }
+  }, 16) // ~60fps
+  
+  win.on('closed', () => clearInterval(mouseCheckInterval))
 
   // Do not start in click-through mode. Renderer will toggle based on pixel hit-test.
 
@@ -54,6 +93,7 @@ function createWindow() {
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.setIgnoreMouseEvents(ignore, options)
+
   })
   let dragOffset = null
   ipcMain.on('drag-start', (event, screenX, screenY) => {
