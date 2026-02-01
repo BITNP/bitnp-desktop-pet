@@ -89,9 +89,14 @@ function createWindow() {
         backgroundThrottling: false,
         webgl: true,
         contextIsolation: true,
-        nodeIntegration: false
+        nodeIntegration: false,
+        zoomFactor: 1.0 // 缩放比
       }
     })
+
+    // 禁止用户缩放
+    win.webContents.setVisualZoomLevelLimits(1, 1)
+    // win.webContents.setLayoutZoomLevelLimits(1, 1)
 
     // 窗口事件监听
     win.on('closed', () => {
@@ -103,6 +108,14 @@ function createWindow() {
       console.log('窗口准备就绪，显示窗口')
       win.show()
       win.focus()
+    })
+
+    win.webContents.on('zoom-changed', (event, zoomDirection) => {
+      // 阻止所有缩放事件
+      event.preventDefault()
+      // 立即重置为100%缩放
+      win.webContents.setZoomFactor(1.0)
+      win.webContents.setZoomLevel(0)
     })
 
     win.webContents.on('did-finish-load', () => {
