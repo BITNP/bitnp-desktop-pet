@@ -260,6 +260,7 @@ export default class Live2dController {
             resizeTo: this.canvas,
             view: this.canvas
         });
+        this.app = app;
         // app.view.setAttribute("id", "main-canvas");
         // document.body.appendChild(app.view);
         app.renderer.backgroundAlpha = 0;

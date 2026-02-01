@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage } from 'electron'
+
 import path from 'path'
 
 // The built directory structure
@@ -9,9 +10,36 @@ import path from 'path'
 // │ ├── main.js
 // │ └── preload.js
 // 
+
+// const gpuSwitches = [
+//   '--enable-gpu-rasterization',
+//   '--enable-accelerated-2d-canvas',
+//   '--enable-webgl',
+//   '--enable-webgl2',
+//   '--enable-webgpu',
+//   '--enable-accelerated-video-decode',
+//   '--enable-accelerated-video-encode',
+//   '--enable-accelerated-mjpeg-decode',
+//   '--enable-native-gpu-memory-buffers',
+//   '--enable-oop-rasterization',
+//   '--enable-zero-copy',
+//   '--ignore-gpu-blacklist',
+//   '--use-gl=desktop',
+//   '--disable-software-rasterizer',
+//   '--disable-gpu-driver-bug-workarounds',
+//   '--disable-features=VizDisplayCompositor',
+//   '--enable-features=VaapiVideoDecoder,CanvasOopRasterization,Vulkan,UseSkiaRenderer',
+//   '--force_high_performance_gpu'  // 对于双显卡笔记本
+// ]
+
+// gpuSwitches.forEach(gpuSwitch => {
+//   app.commandLine.appendSwitch(gpuSwitch.replace('--', ''))
+// });
+
+// console.log(app.getGPUFeatureStatus()) // DEBUG
+
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(__dirname, '../public')
-
 let win
 let tray = null
 
@@ -47,20 +75,18 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: false, // Prevent throttling when hidden
-      nodeIntegration: true,      // 允许在渲染进程中使用 Node.js API
-      contextIsolation: false,   // 禁用上下文隔离
-      webSecurity: false,        // 禁用 web 安全策略（开发时）
-      enableRemoteModule: true,  // 启用 remote 模块
-      sandbox: false,            // 禁用沙箱
+      webgl: true,
+      // nodeIntegration: true,      // 允许在渲染进程中使用 Node.js API
+      // contextIsolation: false,   // 禁用上下文隔离
+      // TODO: are these configs necessary?
+      // webSecurity: false,        // 禁用 web 安全策略（开发时）
+      // enableRemoteModule: true,  // 启用 remote 模块
+      // sandbox: false,            // 禁用沙箱
     },
   })
 
-
-  // 2. 设置拖拽区域（桌宠身体部分）
-  let dragRect = { x: 100, y: 100, width: 200, height: 300 }
-  let isInDragArea = false
   
-  // 3. 持续监听鼠标位置
+  // 持续监听鼠标位置
   const mouseCheckInterval = setInterval(() => {
     const cursor = screen.getCursorScreenPoint()
     const winBounds = win.getBounds()
@@ -69,21 +95,16 @@ function createWindow() {
     const relX = cursor.x - winBounds.x
     const relY = cursor.y - winBounds.y
     
-    // 判断鼠标是否在拖拽区域内
-    const newIsInDragArea = (
-      relX >= dragRect.x &&
-      relX <= dragRect.x + dragRect.width &&
-      relY >= dragRect.y &&
-      relY <= dragRect.y + dragRect.height
-    )
-    
-    // 状态变化时才切换
-    if (newIsInDragArea !== isInDragArea) {
-      isInDragArea = newIsInDragArea
-      // 关键：在拖拽区域内正常，在区域外穿透
-      win.setIgnoreMouseEvents(!isInDragArea, { forward: true })
+    if (relX >= 0 && relX <= winBounds.width && 
+        relY >= 0 && relY <= winBounds.height) {
+      // const requestId = ++lastRequestId
+      win.webContents.send('check-mouse-position', {
+        // id: requestId,
+        x: relX,
+        y: relY
+      })
     }
-  }, 16) // ~60fps
+  }, 33) // ~30fps
   
   win.on('closed', () => clearInterval(mouseCheckInterval))
 
@@ -95,6 +116,7 @@ function createWindow() {
     win?.setIgnoreMouseEvents(ignore, options)
 
   })
+
   let dragOffset = null
   ipcMain.on('drag-start', (event, screenX, screenY) => {
     const w = BrowserWindow.fromWebContents(event.sender)

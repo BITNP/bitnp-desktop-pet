@@ -1,9 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 const url = require('url')
 
-// 将 Node.js 的 url 模块注入到渲染进程
+const requireAPI = (packageName) => {
+  // it seems that "pixi-live2d-display" mistakenly uses "require('url')"
+  // we fix it this way
+  if (packageName === "url") return url;
+}
+contextBridge.exposeInMainWorld('require', requireAPI)
 
-// 或者在全局对象上直接添加
 
 contextBridge.exposeInMainWorld('ipcRenderer', {
   send: (channel, ...args) => {
@@ -17,7 +21,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   off: (channel, func) => {
     ipcRenderer.removeListener(channel, func) // Note: this simple implementation might not work perfectly with the wrapper above
   },
-  resolve: url.resolve
 })
 
-window.url = url
+console.log("hello from preload.js!")
