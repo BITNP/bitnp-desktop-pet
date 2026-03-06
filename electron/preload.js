@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, protocol } from 'electron'
+
 const url = require('url')
 
 const requireAPI = (packageName) => {

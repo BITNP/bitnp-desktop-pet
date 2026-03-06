@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, protocol } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import serve from 'electron-serve'
@@ -21,7 +21,8 @@ console.log('resourcesPath:', process.resourcesPath)
 
 const loadURL = serve({ 
   directory: DIST_PATH,  // 指向 dist 目录，不是根目录
-  scheme: 'app'
+  scheme: 'app',
+  isCorsEnabled: true
 })
 
 let win = null
@@ -67,14 +68,16 @@ function createWindow() {
     const primaryDisplay = screen.getPrimaryDisplay()
     const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize
     
-    const windowWidth = 600
-    const windowHeight = 800
+    const windowWidth = 720 * 2 / 2
+    const windowHeight = 1280
+    // const windowWidth = 600
+    // const windowHeight = 800
 
     win = new BrowserWindow({
       width: windowWidth,
       height: windowHeight,
-      x: Math.round(screenWidth - windowWidth - 20),  // 右边留20px边距
-      y: Math.round(screenHeight - windowHeight - 20), // 下边留20px边距
+      x: Math.round(screenWidth - windowWidth),  // 右边留20px边距
+      y: Math.round(screenHeight - windowHeight), // 下边留20px边距
       type: 'toolbar',
       // frame: true, // DEBUG
       // transparent: false, // DEBUG
