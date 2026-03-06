@@ -26,6 +26,7 @@ import VideoStreamManager from '@/avatar-animation/VideoStreamManager.js'
 import Dashboard from '@/components/dashboard.vue'
 // let pixiApp = null;
 
+// 动画设置
 let animationState = "standing";
 let prevAnimationState = "standing";
 

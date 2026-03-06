@@ -1,4 +1,16 @@
 <script>
+import SystemMonitorClient from '@/components/systemMonitorClient';
+// 系统信息监测
+const BACKEND_PORT = 10987;
+
+const systemInfo = [
+    { id: 'systemVersion', name: '系统版本', value: 'Windows 11 Pro' },
+    { id: 'processor', name: '处理器', value: 'Intel i7-12700H' },
+    { id: 'gpu', name: '显卡', value: 'NVIDIA RTX 4060' },
+    // { id: 'uptime', value: '2天 4小时', icon: 'fa-clock' },
+    { id: 'battery', name: '电池', value: '87% (充电中)', icon: 'fa-battery-three-quarters' }
+];
+
 window.addEventListener('load', () => {
     // 获取DOM元素
     const dashboardCard = document.getElementById('dashboardCard');
@@ -13,44 +25,44 @@ window.addEventListener('load', () => {
     const networkProgress = document.getElementById('networkProgress');
     const networkValue = document.getElementById('networkValue');
     
-    // 创建粒子背景
-    function createParticles() {
-        const particlesContainer = document.getElementById('particles');
-        const particleCount = 20;
+    // // 创建粒子背景
+    // function createParticles() {
+    //     const particlesContainer = document.getElementById('particles');
+    //     const particleCount = 20;
         
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
+    //     for (let i = 0; i < particleCount; i++) {
+    //         const particle = document.createElement('div');
+    //         particle.className = 'particle';
             
-            // 随机大小
-            const size = Math.random() * 4 + 1;
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
+    //         // 随机大小
+    //         const size = Math.random() * 4 + 1;
+    //         particle.style.width = `${size}px`;
+    //         particle.style.height = `${size}px`;
             
-            // 随机位置
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
+    //         // 随机位置
+    //         particle.style.left = `${Math.random() * 100}%`;
+    //         particle.style.top = `${Math.random() * 100}%`;
             
-            // 随机颜色
-            const colors = [
-                'rgba(0, 200, 255, 0.5)',
-                'rgba(157, 78, 221, 0.5)',
-                'rgba(0, 255, 150, 0.5)',
-                'rgba(255, 107, 107, 0.5)'
-            ];
-            particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+    //         // 随机颜色
+    //         const colors = [
+    //             'rgba(0, 200, 255, 0.5)',
+    //             'rgba(157, 78, 221, 0.5)',
+    //             'rgba(0, 255, 150, 0.5)',
+    //             'rgba(255, 107, 107, 0.5)'
+    //         ];
+    //         particle.style.background = colors[Math.floor(Math.random() * colors.length)];
             
-            // 随机动画
-            const duration = Math.random() * 20 + 10;
-            const delay = Math.random() * 5;
-            particle.style.animation = `float ${duration}s infinite ease-in-out ${delay}s`;
+    //         // 随机动画
+    //         const duration = Math.random() * 20 + 10;
+    //         const delay = Math.random() * 5;
+    //         particle.style.animation = `float ${duration}s infinite ease-in-out ${delay}s`;
             
-            particlesContainer.appendChild(particle);
-        }
-    }
+    //         particlesContainer.appendChild(particle);
+    //     }
+    // }
     
-    // 初始化粒子
-    createParticles();
+    // // 初始化粒子
+    // createParticles();
     
     // 切换按钮功能
     toggleBtn.addEventListener('click', function() {
@@ -74,31 +86,54 @@ window.addEventListener('load', () => {
         dashboardCard.style.transform = 'rotateY(0deg)';
     });
     
+    const systemMonitorClient = new SystemMonitorClient(`http://localhost:${BACKEND_PORT}`);
+
     // 模拟实时数据更新
-    function updateMetrics() {
+    async function updateMetrics() {
+
+        const metrics = await systemMonitorClient.getAllMetrics();
+
+        console.log(metrics)
+
         // 模拟CPU使用率变化 (20% - 60%)
-        const cpuUsage = 20 + Math.random() * 40;
+        const cpuUsage = metrics.cpu["usage"];
         cpuProgress.style.width = `${cpuUsage}%`;
         cpuValue.textContent = `${Math.round(cpuUsage)}%`;
         
-        // 模拟内存使用变化 (2.5 - 4.0 GB，总共8GB)
-        const memoryUsed = 2.5 + Math.random() * 1.5;
-        const memoryPercent = (memoryUsed / 8) * 100;
+        // 内存
+        const memoryUsed = metrics.memory["used"];
+        const memoryTotal = metrics.memory["total"];
+        const memoryPercent = (memoryUsed / memoryTotal) * 100;
         memoryProgress.style.width = `${memoryPercent}%`;
-        memoryValue.textContent = `${memoryUsed.toFixed(1)}/8.0 GB`;
+        memoryValue.textContent = `${memoryUsed.toFixed(1)}/${memoryTotal.toFixed(1)} GB`;
         
-        // 模拟磁盘使用 (120-135 GB，总共512GB)
-        const diskUsed = 120 + Math.random() * 15;
-        const diskPercent = (diskUsed / 512) * 100;
+        // 硬盘
+        const diskTotal = metrics.disk.total;
+        const diskUsed = metrics.disk.used;
+        const diskPercent = (diskUsed / diskTotal) * 100;
         diskProgress.style.width = `${diskPercent}%`;
-        diskValue.textContent = `${Math.round(diskUsed)}/512 GB`;
+        diskValue.textContent = `${Math.round(diskUsed)}/${Math.round(diskTotal)} GB`;
         
-        // 模拟网络速度变化
-        const uploadSpeed = Math.round(20 + Math.random() * 40);
-        const downloadSpeed = Math.round(60 + Math.random() * 80);
-        const networkUsage = (uploadSpeed + downloadSpeed) / 200; // 假设最大200Kbps
-        networkProgress.style.width = `${networkUsage * 100}%`;
-        networkValue.textContent = `${downloadSpeed + uploadSpeed} Kbps`;
+        // // 模拟网络速度变化
+        // const uploadSpeed = Math.round(20 + Math.random() * 40);
+        // const downloadSpeed = Math.round(60 + Math.random() * 80);
+        // const networkUsage = (uploadSpeed + downloadSpeed) / 200; // 假设最大200Kbps
+        // networkProgress.style.width = `${networkUsage * 100}%`;
+        // networkValue.textContent = `${downloadSpeed + uploadSpeed} Kbps`;
+
+        // 处理器型号
+        const cpuName = metrics.cpu["name"];
+        document.getElementById('processor').textContent = cpuName;
+
+        // 显卡型号
+        const gpuName = metrics.gpu["name"];
+        document.getElementById('gpu').textContent = gpuName;
+
+
+        // 电池
+        const batteryPercent = metrics.battery["capacity_remain"] / metrics.battery["capacity_max"] * 100
+        document.getElementById('battery').textContent = batteryPercent.toFixed(2) + '%';
+
         
         // 更新系统信息中的最后更新时间
         const now = new Date();
@@ -113,8 +148,8 @@ window.addEventListener('load', () => {
     // 初始数据
     updateMetrics();
     
-    // 每3秒更新一次数据
-    setInterval(updateMetrics, 3000);
+    // 每10秒更新一次数据
+    setInterval(updateMetrics, 10000);
     
     // 鼠标移动时的3D效果增强
     dashboardCard.addEventListener('mousemove', function(e) {
@@ -125,7 +160,7 @@ window.addEventListener('load', () => {
         const centerX = cardRect.left + cardRect.width / 2;
         const centerY = cardRect.top + cardRect.height / 2;
         
-        const REACTION_RATIO = 0.050;
+        const REACTION_RATIO = 0.040;
 
 
         let rotateY = (e.clientX - centerX) * REACTION_RATIO;
@@ -148,74 +183,20 @@ window.addEventListener('load', () => {
         }
     });
     
-    // 系统信息随机更新
-    const systemInfo = [
-        { id: 'systemVersion', value: 'Windows 11 Pro', icon: 'fa-desktop' },
-        { id: 'processor', value: 'Intel i7-12700H', icon: 'fa-microchip' },
-        { id: 'gpu', value: 'NVIDIA RTX 4060', icon: 'fa-gamepad' },
-        { id: 'uptime', value: '2天 4小时', icon: 'fa-clock' },
-        { id: 'battery', value: '87% (充电中)', icon: 'fa-battery-three-quarters' }
-    ];
+    // // 添加鼠标悬停时的粒子互动效果
+    // dashboardCard.addEventListener('mouseenter', () => {
+    //     const particles = document.querySelectorAll('.particle');
+    //     particles.forEach(particle => {
+    //         particle.style.animationPlayState = 'running';
+    //     });
+    // });
     
-    // 每隔一段时间随机更新一条系统信息
-    setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * systemInfo.length);
-        const info = systemInfo[randomIndex];
-        const element = document.getElementById(info.id);
-        
-        // 保存原始值
-        const originalValue = element.textContent;
-        
-        // 添加更新动画
-        element.style.opacity = '0.5';
-        element.style.transform = 'translateY(-5px)';
-        
-        setTimeout(() => {
-            // 短暂改变
-            if(info.id === 'battery') {
-                const newBattery = 80 + Math.floor(Math.random() * 20);
-                const isCharging = Math.random() > 0.5;
-                element.textContent = `${newBattery}% ${isCharging ? '(充电中)' : '(使用中)'}`;
-            } else if(info.id === 'uptime') {
-                const days = Math.floor(Math.random() * 5);
-                const hours = Math.floor(Math.random() * 24);
-                element.textContent = `${days}天 ${hours}小时`;
-            } else if(info.id === 'gpu') {
-                const gpus = ['NVIDIA RTX 4060', 'NVIDIA RTX 4070', 'AMD RX 7700 XT'];
-                element.textContent = gpus[Math.floor(Math.random() * gpus.length)];
-            }
-            
-            element.style.opacity = '1';
-            element.style.transform = 'translateY(0)';
-            
-            // 2秒后恢复
-            setTimeout(() => {
-                element.style.opacity = '0.5';
-                element.style.transform = 'translateY(-5px)';
-                
-                setTimeout(() => {
-                    element.textContent = info.value;
-                    element.style.opacity = '1';
-                    element.style.transform = 'translateY(0)';
-                }, 200);
-            }, 2000);
-        }, 200);
-    }, 8000);
-    
-    // 添加鼠标悬停时的粒子互动效果
-    dashboardCard.addEventListener('mouseenter', () => {
-        const particles = document.querySelectorAll('.particle');
-        particles.forEach(particle => {
-            particle.style.animationPlayState = 'running';
-        });
-    });
-    
-    dashboardCard.addEventListener('mouseleave', () => {
-        const particles = document.querySelectorAll('.particle');
-        particles.forEach(particle => {
-            particle.style.animationPlayState = 'paused';
-        });
-    });
+    // dashboardCard.addEventListener('mouseleave', () => {
+    //     const particles = document.querySelectorAll('.particle');
+    //     particles.forEach(particle => {
+    //         particle.style.animationPlayState = 'paused';
+    //     });
+    // });
 });
 </script>
 
@@ -318,12 +299,12 @@ window.addEventListener('load', () => {
                 </div>
                 
                 <div class="content system-info">
-                    <div class="info-item">
+                    <!-- <div class="info-item">
                         <div class="info-label">
                             <i class="fas fa-desktop"></i> 系统版本
                         </div>
                         <div class="info-value" id="systemVersion">Windows 11 Pro</div>
-                    </div>
+                    </div> -->
                     <div class="info-item">
                         <div class="info-label">
                             <i class="fas fa-microchip"></i> 处理器
@@ -336,12 +317,12 @@ window.addEventListener('load', () => {
                         </div>
                         <div class="info-value" id="gpu">NVIDIA RTX 4060</div>
                     </div>
-                    <div class="info-item">
+                    <!-- <div class="info-item">
                         <div class="info-label">
                             <i class="fas fa-clock"></i> 运行时间
                         </div>
                         <div class="info-value" id="uptime">2天 4小时</div>
-                    </div>
+                    </div> -->
                     <div class="info-item">
                         <div class="info-label">
                             <i class="fas fa-battery-three-quarters"></i> 电池状态
@@ -357,7 +338,7 @@ window.addEventListener('load', () => {
                 </div>
                 
                 <button class="flip-btn" id="flipBackBtn">
-                    <i class="fas fa-undo"></i> 返回仪表盘
+                    返回仪表盘
                 </button>
             </div>
         </div>
@@ -567,16 +548,19 @@ window.addEventListener('load', () => {
     
     /* 切换按钮 */
     .toggle-btn {
-        width: 75px;
-        height: 26px;
-        background: rgba(0, 0, 0, 0.4);
-        color: white;
-        border-radius: 13px;
         position: relative;
+        background: linear-gradient(135deg, rgba(0, 162, 255, 0.2), rgba(157, 78, 221, 0.2));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-size: 12px;
         cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        border: 1px solid rgba(0, 200, 255, 0.3);
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        backdrop-filter: blur(10px);
     }
     
     /* 内容区域 */

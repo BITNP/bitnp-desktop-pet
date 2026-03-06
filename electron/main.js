@@ -2,6 +2,22 @@ import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, protocol 
 import path from 'path'
 import { fileURLToPath } from 'url'
 import serve from 'electron-serve'
+// import SystemMonitorServer from './systemMonitorServer'
+
+// 系统信息监测后端
+// const systemMonitorServer = new SystemMonitorServer(10987);
+// systemMonitorServer.start().catch((e) => {console.error(e);});
+// process.on('SIGINT', () => {
+//   console.log('\n收到终止信号，正在关闭服务器...');
+//   systemMonitorServer.stop();
+//   process.exit(0);
+// });
+
+// process.on('SIGTERM', () => {
+//   console.log('\n收到终止信号，正在关闭服务器...');
+//   systemMonitorServer.stop();
+//   process.exit(0);
+// });
 
 // 更可靠的方式获取路径
 const __filename = fileURLToPath(import.meta.url)
@@ -278,7 +294,7 @@ function loadFallbackPage() {
 function setupIPC() {
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    // return // DEBUG
+    return // DEBUG
     win?.setIgnoreMouseEvents(ignore, options)
   })
 
