@@ -294,7 +294,7 @@ function loadFallbackPage() {
 function setupIPC() {
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    return // DEBUG
+    // return // DEBUG
     win?.setIgnoreMouseEvents(ignore, options)
   })
 
