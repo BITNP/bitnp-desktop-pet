@@ -128,16 +128,13 @@ export default class PixiAvatarAnimationController {
         const video = this.videos.get(name);
         const prevVideo = this.currentVideo;
         if (video) {
-            video.element.currentTime = 0;
-            video.element.play();
-            // video.sprite.visible = true;
+
             this.currentVideo = video;
             
             // 继续监听当前视频进度，支持队列自动切换
-            this._attachAutoSwitchListener(video.element);
             
             const self = this;
-            requestAnimationFrame(() => {
+            video.element.addEventListener("seeked", () => {
                 video.sprite.visible = true; // 显示下一段视频
                 requestAnimationFrame(() => {
                     self.videos.forEach((v) => {
@@ -147,11 +144,15 @@ export default class PixiAvatarAnimationController {
                         }
                     });
                 });
-            });
+            }, { once: true });
+            
+            video.element.currentTime = 0;
+            video.element.play();
+            this._attachAutoSwitchListener(video.element);
             
         }
     }
-
+    
     // 将视频加入播放队列的末尾
     setNext(videoName) {
         if (!videoName) return;
