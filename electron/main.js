@@ -85,7 +85,7 @@ function createWindow() {
     const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize
     
     const windowWidth = 720 * 2 / 2
-    const windowHeight = 1280
+    const windowHeight = 1280 / 2
     // const windowWidth = 600
     // const windowHeight = 800
 

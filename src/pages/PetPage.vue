@@ -14,15 +14,16 @@
             </div>
         </div>
 
-        <div ref="videoContainer" class="animated-container video-container">
-            <video id="main-video-player" autoplay="true" class="main-video-player"></video>
+        <div ref="videoContainer" class="animated-container avatar-container">
+            <!-- <video id="main-video-player" autoplay="true" class="main-video-player"></video> -->
+             <canvas ref="avatarCanvas" class="avatar-canvas"></canvas>
         </div>
 
     </div>
 </template>
 
 <script>
-import VideoStreamManager from '@/avatar-animation/VideoStreamManager.js'
+import PixiAvatarAnimationController from '@/avatar-animation/PixiAvatarAnimationController';
 import Dashboard from '@/components/dashboard.vue'
 // let pixiApp = null;
 
@@ -131,53 +132,52 @@ const checkMousePosition = async (data) => {
             const rect = canvas.getBoundingClientRect();
             
             // 将视口坐标转换为canvas局部坐标
-            const canvasX = x - rect.left;
-            const canvasY = y - rect.y;
+            const canvasX = (x - rect.left) * canvas.width / canvas.clientWidth;
+            const canvasY = (y - rect.y) * canvas.height / canvas.clientHeight;
             
             // 检查坐标是否在canvas范围内
             if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {
-                window.canvas = canvas // DEBUG
 
-                // const ctx = canvas.getContext('webgl2');
-                // const glY = canvas.height - canvasY - 1;
-                // const pixel = new Uint8Array(4);
-                
-                // // function waitForRender() {
-                // //     return new Promise(resolve => {
-                // //         pixiApp.render(); // 强制渲染
-                // //         resolve();
-                // //     });
-                // // }
-                // // await waitForRender()
-
-                // ctx.readPixels(
-                //     Math.floor(canvasX),
-                //     Math.floor(glY),
-                //     1, 1,
-                //     ctx.RGBA,
-                //     ctx.UNSIGNED_BYTE,
-                //     pixel
-                // );
-
-                // TODO: get alpha with 2d canvas context
-                
-                const ctx = canvas.getContext('2d');
-                const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
-
-                const alpha = pixel[3];
-                debugAlpha = alpha;
-                
-                // 设置透明度阈值（例如：10，对应约4%的透明度）
                 const ALPHA_THRESHOLD = 10;
 
-                // document.getElementById("DEBUG").innerHTML = `${canvasX}, ${canvasY}; ${debugAlpha}`;
+                // webgl2 canvas context
+                const ctx = canvas.getContext('webgl2');
+                const glY = canvas.height - canvasY - 1;
+                const pixel = new Uint8Array(4);
+                
+                if (canvas.pixiApp) {
+                    function waitForRender() {
+                        return new Promise(resolve => {
+                            canvas.pixiApp.render(); // 强制渲染
+                            resolve();
+                        });
+                    }
+                    await waitForRender()
+                }
+
+                ctx.readPixels(
+                    Math.floor(canvasX),
+                    Math.floor(glY),
+                    1, 1,
+                    ctx.RGBA,
+                    ctx.UNSIGNED_BYTE,
+                    pixel
+                );
+
+                const alpha = pixel[3];
+
+                // // 2d canvas context
+                // const ctx = canvas.getContext('2d');
+                // const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+                // const alpha = pixel[3];
+
+                // debugAlpha = alpha;
+                // document.getElementById("DEBUG").innerHTML = `${canvasX}, ${canvasY}; ${debugAlpha} ${canvas.height} ${canvas.clientHeight}`;
                 
                 if (alpha > ALPHA_THRESHOLD) {
                     shouldIgnoreMouse = false;
                     break;
                 }
-
-                const canvasId = canvas.getAttribute("id")
                 
             }
             // 如果坐标不在canvas范围内或透明度低于阈值，继续检查下一个元素
@@ -281,46 +281,58 @@ export default {
         // }
 
         const mainVideoPlayer = document.getElementById("main-video-player");
-        const videoStreamManager = new VideoStreamManager(mainVideoPlayer);
 
 
         document.addEventListener("mousedown", (e => self.handleMouseDown(e)));
         document.addEventListener("mouseup", (e => self.handleMouseUp(e)));
         document.addEventListener("mousemove", (e => self.handleMouseMove(e)));
 
-        const videoDataBank = {};
-        // fetch videos
-        const promises = [
-            fetchVideoData("/Resources/animation/standing.webm").then((data) => { videoDataBank["standing"] = data }),
-            fetchVideoData("/Resources/animation/transfer-pos.webm").then((data) => { videoDataBank["transfer-pos"] = data }),
-            fetchVideoData("/Resources/animation/transfer-neg.webm").then((data) => { videoDataBank["transfer-neg"] = data }),
-            fetchVideoData("/Resources/animation/ipad.webm").then((data) => { videoDataBank["ipad"] = data })
-        ]
+        const videoList = [
+            { name: "standing", url: "/Resources/animation/standing.webm" },
+            { name: "transfer-pos", url: "/Resources/animation/transfer-pos.webm" },
+            { name: "transfer-neg", url: "/Resources/animation/transfer-neg.webm" },
+            { name: "ipad", url: "/Resources/animation/ipad.webm" },
+        ];
 
-        Promise.all(promises).then(async () => {   
-            // 初始化为站立待机动画
-            videoStreamManager.appendVideoData(videoDataBank["standing"]);
+        const avatarController = new PixiAvatarAnimationController(this.$refs.avatarCanvas);
+        
+        const avatarUpdate = () => {
+            const currentVideo = avatarController.currentVideo.name;
+            if (animationState === "ipad") {
 
-            // 当buffer中视频较少时，检查动画状态并向buffer中缓冲下一段动画视频数据
-            videoStreamManager.addEventListener("bufferlow", () => {
-                let videoName;
-                if (animationState === "standing") {
-                    if (prevAnimationState !== animationState) {
-                        videoName = "transfer-neg";
-                    } else {
-                        videoName = "standing";
-                    }
-                } else if (animationState === "ipad") {
-                    if (prevAnimationState !== animationState) {
-                        videoName = "transfer-pos";
-                    } else {
-                        videoName = "ipad";
-                    }
+                if (currentVideo === "ipad") {
+                    avatarController.videoQueue = [];
+                } else if (currentVideo === "transfer-pos") {
+                    avatarController.videoQueue = ["ipad"];
+                } else {
+                    avatarController.videoQueue = ["transfer-pos"];
                 }
-                prevAnimationState = animationState;
-                videoStreamManager.appendVideoData(videoDataBank[videoName]);
-            });
+
+            } else if (animationState === "standing" && currentVideo !== "standing") {
+
+                if (currentVideo === "standing") {
+                    avatarController.videoQueue = [];
+                } else if (currentVideo === "transfer-neg") {
+                    avatarController.videoQueue = ["standing"];
+                } else {
+                    avatarController.videoQueue = ["transfer-neg"];
+                }
+            }
+
+            console.log("avatar update", animationState, currentVideo, avatarController.videoQueue);
+            prevAnimationState = animationState;
+            setTimeout(avatarUpdate, 100);
+        }
+
+        console.log(avatarController); // DEBUG
+        avatarController.preloadVideos(videoList).then(() => {
+            console.log("all videos loaded");
+            avatarController.setNext("standing");
+            avatarController._switchToNextInQueue();
+            avatarUpdate();
         });
+
+
 
         this.$refs.videoContainer.addEventListener('mouseup', () => {
             // 桌宠部分点击交互
@@ -347,20 +359,25 @@ export default {
     -moz-osx-font-smoothing: grayscale;
 }
 
-.video-container {
+.avatar-container {
     position: fixed;
-    width: 60vw;
+    height: 100vh;
     right: 5vw;
     aspect-ratio: 9/16;
 }
 
 
-.video-container.to-right {
-    width: 50vw;
+.avatar-container.to-right {
+    height: 80vh;
     right: 0;
 }
 
 .main-video-player {
+    width: 100%;
+    aspect-ratio: 9/16;
+}
+
+.avatar-canvas {
     width: 100%;
     aspect-ratio: 9/16;
 }
@@ -371,7 +388,7 @@ export default {
 
 .data-outer-container {
     position: fixed;
-    width: 50vw;
+    width: 100vw;
     height: 100vh;
     left: 0;
     perspective: 1000px;
