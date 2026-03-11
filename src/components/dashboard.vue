@@ -570,6 +570,12 @@ export default {
   padding: 20px;
   height: calc(100% - 70px);
   overflow-y: auto;
+  /* 修复鼠标滚轮问题 */
+  -webkit-overflow-scrolling: auto;
+  transform: translateZ(0);
+  will-change: transform;
+  transform-style: flat;
+  -webkit-transform-style: flat; /* 关键：强制使用 2D 变换 */
 }
 
 .content::-webkit-scrollbar {
