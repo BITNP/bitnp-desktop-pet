@@ -2,22 +2,8 @@ import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, protocol 
 import path from 'path'
 import { fileURLToPath } from 'url'
 import serve from 'electron-serve'
-// import SystemMonitorServer from './systemMonitorServer'
-
-// 系统信息监测后端
-// const systemMonitorServer = new SystemMonitorServer(10987);
-// systemMonitorServer.start().catch((e) => {console.error(e);});
-// process.on('SIGINT', () => {
-//   console.log('\n收到终止信号，正在关闭服务器...');
-//   systemMonitorServer.stop();
-//   process.exit(0);
-// });
-
-// process.on('SIGTERM', () => {
-//   console.log('\n收到终止信号，正在关闭服务器...');
-//   systemMonitorServer.stop();
-//   process.exit(0);
-// });
+import { spawn } from 'child_process';
+import fetchBackendData from './fetchBackendData';
 
 // 更可靠的方式获取路径
 const __filename = fileURLToPath(import.meta.url)
@@ -40,6 +26,58 @@ const loadURL = serve({
   scheme: 'app',
   isCorsEnabled: true
 })
+
+function getExePath() {
+  if (app.isPackaged) {
+    // 生产环境：资源在 asar 外面
+    return path.join(process.resourcesPath, 'system-monitor', 'multimeter-engine.exe');
+  } else {
+    // 开发环境
+    // 从 main.js 位置向上回到项目根目录，然后到 system-monitor
+    return path.join(__dirname, '..', 'system-monitor', 'multimeter-engine.exe');
+  }
+}
+
+
+
+const exePath = getExePath();
+const port = 10987;
+const powershellCommand = `Start-Process -FilePath "${exePath}" -ArgumentList '--port ${port}' -Verb RunAs`;
+const monitorBackend = spawn('powershell.exe', ['-Command', powershellCommand], {
+  windowsHide: true
+});
+
+monitorBackend.stdout.on('data', (data) => {
+  console.log(`输出: ${data}`);
+});
+
+monitorBackend.stderr.on('data', (data) => {
+  console.error(`错误: ${data}`);
+});
+
+monitorBackend.on('close', (code) => {
+  console.log(`子进程退出，退出码: ${code}`);
+});
+
+function stopExe() {
+  if (monitorBackend && !monitorBackend.killed) {
+    console.log('正在终止子进程...');
+    monitorBackend.kill('SIGTERM');  // 发送终止信号
+    
+    // 3秒后强制终止
+    setTimeout(() => {
+      if (monitorBackend && !monitorBackend.killed) {
+        monitorBackend.kill('SIGKILL');
+      }
+    }, 3000);
+  }
+}
+
+app.on('before-quit', () => {
+  console.log('应用即将退出，终止子进程');
+  stopExe();
+});
+
 
 let win = null
 let tray = null
@@ -318,6 +356,66 @@ function setupIPC() {
   ipcMain.on('drag-end', () => {
     dragOffset = null
   })
+
+  
+ipcMain.handle('get-system-monitor-data', async () => {
+  const metrics = [
+    "cpu_name",
+    "cpu_temperature",
+    "cpu_temperature_first",
+    "cpu_temperature_last",
+    "cpu_tjmax_first",
+    "cpu_tjmax_last",
+    "cpu_power",
+    "cpu_voltage_first",
+    "cpu_voltage_last",
+    "cpu_voltage",
+    "cpu_clock_first",
+    "cpu_clock_last",
+    "cpu_clock_avg",
+    "cpu_clock_rms",
+    "cpu_clock_max",
+    "cpu_usage",
+    "cpu_usage_first",
+    "cpu_usage_last",
+    "gpu_name",
+    "gpu_temperature",
+    "gpu_power",
+    "gpu_clock_rms",
+    "gpu_mem_clock_rms",
+    "gpu_usage",
+    "mem_percentage",
+    "mem_available",
+    "mem_used",
+    "bat_capacity_max",
+    "bat_capacity_remain",
+    "bat_capacity_designed",
+    "bat_voltage",
+    "bat_rate",
+    "bat_state",
+    "os_activated",
+    "disk_temperature_first",
+    "disk_temperature_last",
+    "disk_disk_size"
+  ]
+  
+  const results = {};
+  for (const metric of metrics) {
+    try {
+      const data = await fetchBackendData(metric);
+
+      if (typeof data.payload.value === 'string' && data.payload.value.startsWith('Failed')) {
+        results[metric] = null
+      } else {
+        results[metric] = data.payload.value;
+      }
+    } catch (error) {
+      results[metric] = null;
+    }
+  }
+  
+  return results;
+});
 }
 
 // 应用事件

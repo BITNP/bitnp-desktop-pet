@@ -89,7 +89,7 @@ function getPixelColorAtMouse(video, mouseX, mouseY) {
 let prevShouldIgnoreMouse = false;
 const checkMousePosition = async (data) => {
     const { x, y } = data
-    
+    // document.getElementById("DEBUG").textContent = prevShouldIgnoreMouse;
     // 更新鼠标位置
     // mouseX.value = x
     // mouseY.value = y
@@ -406,7 +406,7 @@ export default {
     opacity: 1;
     padding-left: 10%;
     padding-right: 10%;
-    padding-top: 20%;
+    padding-top: 10%;
 }
 
 
